@@ -50,8 +50,7 @@ import org.apache.commons.lang3.ArrayUtils;
 @PluginDescriptor(
 	name = "Better Status Bars",
 	description = "An extension of 'Status Bars' that allows 4 bars to be displayed at one time, instead of 2.",
-	conflicts = "Status Bars", //It does not really 'conflict' so much as it just draws one on top of the other
-	enabledByDefault = false
+	conflicts = "Status Bars" //It does not really 'conflict' so much as it just draws one on top of the other
 )
 @PluginDependency(ItemStatPlugin.class)
 public class BetterStatusBarsPlugin extends Plugin
