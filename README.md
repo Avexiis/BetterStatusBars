@@ -1,6 +1,6 @@
-# More Status Bars
+# Better Status Bars
 
-More Status Bars enhances the default Status Bars plugin by letting you display **up to four status bars at once**.
+Better Status Bars enhances the default Status Bars plugin by letting you display **up to four status bars at once**.
 
 ---
 
@@ -22,4 +22,3 @@ More Status Bars enhances the default Status Bars plugin by letting you display 
 - This plugin will automatically disable the default Status Bars plugin if enabled.
 
 Credits to the original developers of the Status Bars plugin for most of the work, this simply extends it.
-
