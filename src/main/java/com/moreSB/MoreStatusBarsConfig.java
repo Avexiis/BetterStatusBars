@@ -35,7 +35,7 @@ import net.runelite.client.config.Units;
 @ConfigGroup(MoreStatusBarsConfig.GROUP)
 public interface MoreStatusBarsConfig extends Config
 {
-	String GROUP = "betterstatusbars";
+	String GROUP = "morestatusbars";
 
 	@ConfigItem(
 		keyName = "enableCounter",
