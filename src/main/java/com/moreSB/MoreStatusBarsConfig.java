@@ -67,16 +67,6 @@ public interface MoreStatusBarsConfig extends Config
 		return true;
 	}
 
-	enum BarMode
-	{
-		DISABLED,
-		HITPOINTS,
-		PRAYER,
-		RUN_ENERGY,
-		SPECIAL_ATTACK,
-		WARMTH
-	}
-
 	@ConfigItem(
 		keyName = "leftBarMode",
 		name = "Bar #1",
@@ -100,7 +90,7 @@ public interface MoreStatusBarsConfig extends Config
 	@ConfigItem(
 		keyName = "leftSecondaryBarMode",
 		name = "Bar #3",
-		description = "Configures the secondary left status bar (legacy stacks below; modern renders to the left)."
+		description = "Configures the secondary left status bar."
 	)
 	default BarMode leftSecondaryBarMode()
 	{
@@ -110,7 +100,7 @@ public interface MoreStatusBarsConfig extends Config
 	@ConfigItem(
 		keyName = "rightSecondaryBarMode",
 		name = "Bar #4",
-		description = "Configures the secondary right status bar (legacy stacks below; modern renders further left)."
+		description = "Configures the secondary right status bar."
 	)
 	default BarMode rightSecondaryBarMode()
 	{
@@ -135,10 +125,44 @@ public interface MoreStatusBarsConfig extends Config
 	@ConfigItem(
 		keyName = "barWidth",
 		name = "Bar width",
-		description = "The width of the status bars in the modern resizeable layout."
+		description = "The width of the status bars in the modern/resizable mode."
 	)
 	default int barWidth()
 	{
 		return BarRenderer.DEFAULT_WIDTH;
+	}
+
+	@ConfigItem(
+		keyName = "stackBarsInModern",
+		name = "Stack bars in modern mode",
+		description = "When enabled, modern/resizable mode stacks bars on top of one another, like classic mode."
+	)
+	default boolean stackBarsInModern()
+	{
+		return false;
+	}
+
+	@Range(
+		min = 0,
+		max = 20
+	)
+	@ConfigItem(
+		keyName = "modernBarGap",
+		name = "Modern bar spacing",
+		description = "Horizontal spacing between bars in modern/resizable mode."
+	)
+	default int modernBarGap()
+	{
+		return 1;
+	}
+
+	enum BarMode
+	{
+		DISABLED,
+		HITPOINTS,
+		PRAYER,
+		RUN_ENERGY,
+		SPECIAL_ATTACK,
+		WARMTH
 	}
 }

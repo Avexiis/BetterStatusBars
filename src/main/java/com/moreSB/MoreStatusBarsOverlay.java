@@ -80,11 +80,6 @@ class MoreStatusBarsOverlay extends Overlay
 	private static final int MAX_SPECIAL_ATTACK_VALUE = 100;
 	private static final int MAX_RUN_ENERGY_VALUE = 100;
 
-	/*
-	 * Horizontal gap between modern columns. Keep small so it still "fits" next to the inventory.
-	 */
-	private static final int MODERN_BAR_GAP = 1;
-
 	private final Client client;
 	private final MoreStatusBarsPlugin plugin;
 	private final MoreStatusBarsConfig config;
@@ -310,8 +305,17 @@ class MoreStatusBarsOverlay extends Overlay
 
 		if (curViewport == Viewport.RESIZED_BOTTOM)
 		{
-			renderModern(g, width, height, offsetRightBarX, offsetRightBarY,
-				leftPrimary, rightPrimary, leftSecondary, rightSecondary);
+			if (config.stackBarsInModern())
+			{
+				renderModernStacked(g, width, height,
+					offsetLeftBarX, offsetLeftBarY, offsetRightBarX, offsetRightBarY,
+					leftPrimary, rightPrimary, leftSecondary, rightSecondary);
+			}
+			else
+			{
+				renderModernColumns(g, width, height, offsetRightBarX, offsetRightBarY,
+					leftPrimary, rightPrimary, leftSecondary, rightSecondary);
+			}
 		}
 		else
 		{
@@ -377,7 +381,69 @@ class MoreStatusBarsOverlay extends Overlay
 		}
 	}
 
-	private void renderModern(
+	private void renderModernStacked(
+		Graphics2D g,
+		int width,
+		int height,
+		int leftX,
+		int leftY,
+		int rightX,
+		int rightY,
+		BarRenderer leftPrimary,
+		BarRenderer rightPrimary,
+		BarRenderer leftSecondary,
+		BarRenderer rightSecondary
+	)
+	{
+		final int gap = config.modernBarGap();
+		final int leftShift = gap / 2;
+		final int rightShift = gap - leftShift;
+
+		final int leftStackX = leftX - leftShift;
+		final int rightStackX = rightX + rightShift;
+
+		final int leftCount = (leftPrimary != null ? 1 : 0) + (leftSecondary != null ? 1 : 0);
+		if (leftCount == 1)
+		{
+			if (leftPrimary != null)
+			{
+				leftPrimary.renderBar(config, g, leftStackX, leftY, width, height);
+			}
+			else
+			{
+				leftSecondary.renderBar(config, g, leftStackX, leftY, width, height);
+			}
+		}
+		else if (leftCount == 2)
+		{
+			final int halfHeight = height / 2;
+
+			leftPrimary.renderBar(config, g, leftStackX, leftY, width, halfHeight);
+			leftSecondary.renderBar(config, g, leftStackX, leftY + halfHeight, width, height - halfHeight);
+		}
+
+		final int rightCount = (rightPrimary != null ? 1 : 0) + (rightSecondary != null ? 1 : 0);
+		if (rightCount == 1)
+		{
+			if (rightPrimary != null)
+			{
+				rightPrimary.renderBar(config, g, rightStackX, rightY, width, height);
+			}
+			else
+			{
+				rightSecondary.renderBar(config, g, rightStackX, rightY, width, height);
+			}
+		}
+		else if (rightCount == 2)
+		{
+			final int halfHeight = height / 2;
+
+			rightPrimary.renderBar(config, g, rightStackX, rightY, width, halfHeight);
+			rightSecondary.renderBar(config, g, rightStackX, rightY + halfHeight, width, height - halfHeight);
+		}
+	}
+
+	private void renderModernColumns(
 		Graphics2D g,
 		int width,
 		int height,
@@ -389,7 +455,8 @@ class MoreStatusBarsOverlay extends Overlay
 		BarRenderer rightSecondary
 	)
 	{
-		final int step = width + MODERN_BAR_GAP;
+		final int gap = config.modernBarGap();
+		final int step = width + gap;
 
 		int x = rightX;
 
