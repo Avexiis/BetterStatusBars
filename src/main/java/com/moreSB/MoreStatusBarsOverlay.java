@@ -26,7 +26,6 @@
  */
 package com.moreSB;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -58,20 +57,6 @@ import net.runelite.client.util.ImageUtil;
 
 class MoreStatusBarsOverlay extends Overlay
 {
-	private static final Color PRAYER_COLOR = new Color(50, 200, 200, 175);
-	private static final Color ACTIVE_PRAYER_COLOR = new Color(57, 255, 186, 225);
-	private static final Color HEALTH_COLOR = new Color(225, 35, 0, 125);
-	private static final Color POISONED_COLOR = new Color(0, 145, 0, 150);
-	private static final Color VENOMED_COLOR = new Color(0, 65, 0, 150);
-	private static final Color HEAL_COLOR = new Color(255, 112, 6, 150);
-	private static final Color PRAYER_HEAL_COLOR = new Color(57, 255, 186, 75);
-	private static final Color ENERGY_HEAL_COLOR = new Color(199, 118, 0, 218);
-	private static final Color RUN_STAMINA_COLOR = new Color(160, 124, 72, 255);
-	private static final Color SPECIAL_ATTACK_COLOR = new Color(3, 153, 0, 195);
-	private static final Color ENERGY_COLOR = new Color(199, 174, 0, 220);
-	private static final Color DISEASE_COLOR = new Color(255, 193, 75, 181);
-	private static final Color PARASITE_COLOR = new Color(196, 62, 109, 181);
-
 	private static final int HEIGHT = 252;
 	private static final int RESIZED_BOTTOM_HEIGHT = 272;
 	private static final int RESIZED_BOTTOM_OFFSET_Y = 12;
@@ -132,27 +117,27 @@ class MoreStatusBarsOverlay extends Overlay
 
 				if (poisonState >= 1000000)
 				{
-					return VENOMED_COLOR;
+					return config.venomedColor();
 				}
 
 				if (poisonState > 0)
 				{
-					return POISONED_COLOR;
+					return config.poisonedColor();
 				}
 
 				if (client.getVarpValue(VarPlayerID.DISEASE) > 0)
 				{
-					return DISEASE_COLOR;
+					return config.diseaseColor();
 				}
 
 				if (client.getVarbitValue(VarbitID.PARASITE) >= 1)
 				{
-					return PARASITE_COLOR;
+					return config.parasiteColor();
 				}
 
-				return HEALTH_COLOR;
+				return config.hitpointsColor();
 			},
-			() -> HEAL_COLOR,
+			config::hitpointsRestoreColor,
 			() ->
 			{
 				final int poisonState = client.getVarpValue(VarPlayerID.POISON);
@@ -173,7 +158,9 @@ class MoreStatusBarsOverlay extends Overlay
 				}
 
 				return loadSprite(SpriteID.OrbIcon.HITPOINTS);
-			}
+			},
+			config::hitpointsFlashThreshold,
+			client::getTickCount
 		));
 
 		barRenderers.put(MoreStatusBarsConfig.BarMode.PRAYER, new BarRenderer(
@@ -182,21 +169,20 @@ class MoreStatusBarsOverlay extends Overlay
 			() -> getRestoreValue(Skill.PRAYER.getName()),
 			() ->
 			{
-				Color prayerColor = PRAYER_COLOR;
-
 				for (Prayer pray : Prayer.values())
 				{
 					if (client.isPrayerActive(pray))
 					{
-						prayerColor = ACTIVE_PRAYER_COLOR;
-						break;
+						return config.activePrayerColor();
 					}
 				}
 
-				return prayerColor;
+				return config.prayerColor();
 			},
-			() -> PRAYER_HEAL_COLOR,
-			() -> skillIconManager.getSkillImage(Skill.PRAYER, true)
+			config::prayerRestoreColor,
+			() -> skillIconManager.getSkillImage(Skill.PRAYER, true),
+			config::prayerFlashThreshold,
+			client::getTickCount
 		));
 
 		barRenderers.put(MoreStatusBarsConfig.BarMode.RUN_ENERGY, new BarRenderer(
@@ -207,32 +193,54 @@ class MoreStatusBarsOverlay extends Overlay
 			{
 				if (client.getVarbitValue(VarbitID.STAMINA_ACTIVE) != 0)
 				{
-					return RUN_STAMINA_COLOR;
+					return config.staminaColor();
 				}
 
-				return ENERGY_COLOR;
+				return config.runEnergyColor();
 			},
-			() -> ENERGY_HEAL_COLOR,
-			() -> loadSprite(SpriteID.OrbIcon.WALK)
+			config::runEnergyRestoreColor,
+			() -> loadSprite(SpriteID.OrbIcon.WALK),
+			config::runEnergyFlashThreshold,
+			client::getTickCount
 		));
 
 		barRenderers.put(MoreStatusBarsConfig.BarMode.SPECIAL_ATTACK, new BarRenderer(
 			() -> MAX_SPECIAL_ATTACK_VALUE,
 			() -> client.getVarpValue(VarPlayerID.SA_ENERGY) / 10,
 			() -> 0,
-			() -> SPECIAL_ATTACK_COLOR,
+			config::specialAttackColor,
 			() -> null,
-			() -> loadSprite(SpriteID.OrbIcon.SPECIAL)
+			() -> loadSprite(SpriteID.OrbIcon.SPECIAL),
+			() -> BarRenderer.DISABLED_FLASH_THRESHOLD,
+			client::getTickCount
 		));
 
 		barRenderers.put(MoreStatusBarsConfig.BarMode.WARMTH, new BarRenderer(
 			() -> 100,
 			() -> client.getVarbitValue(VarbitID.WINT_WARMTH) / 10,
 			() -> 0,
-			() -> new Color(244, 97, 0),
+			config::warmthColor,
 			() -> null,
-			() -> skillIconManager.getSkillImage(Skill.FIREMAKING, true)
+			() -> skillIconManager.getSkillImage(Skill.FIREMAKING, true),
+			() -> BarRenderer.DISABLED_FLASH_THRESHOLD,
+			client::getTickCount
 		));
+	}
+
+	void onGameTick()
+	{
+		for (BarRenderer renderer : barRenderers.values())
+		{
+			renderer.onGameTick(config);
+		}
+	}
+
+	void resetFlashState()
+	{
+		for (BarRenderer renderer : barRenderers.values())
+		{
+			renderer.resetFlashState();
+		}
 	}
 
 	@Override

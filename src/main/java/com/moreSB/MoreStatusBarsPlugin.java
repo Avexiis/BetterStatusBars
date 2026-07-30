@@ -28,8 +28,6 @@ package com.moreSB;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
-import lombok.AccessLevel;
-import lombok.Getter;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
@@ -70,7 +68,6 @@ public class MoreStatusBarsPlugin extends Plugin
 	@Inject
 	private ClientThread clientThread;
 
-	@Getter(AccessLevel.PACKAGE)
 	private boolean barsDisplayed;
 
 	private int lastCombatActionTickCount;
@@ -84,6 +81,7 @@ public class MoreStatusBarsPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+		overlay.resetFlashState();
 		clientThread.invokeLater(this::checkStatusBars);
 		overlayManager.add(overlay);
 	}
@@ -93,12 +91,14 @@ public class MoreStatusBarsPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 		barsDisplayed = false;
+		overlay.resetFlashState();
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick gameTick)
 	{
 		checkStatusBars();
+		overlay.onGameTick();
 	}
 
 	@Subscribe
@@ -108,6 +108,11 @@ public class MoreStatusBarsPlugin extends Plugin
 		{
 			clientThread.invokeLater(this::checkStatusBars);
 		}
+	}
+
+	boolean isBarsDisplayed()
+	{
+		return barsDisplayed;
 	}
 
 	private void checkStatusBars()

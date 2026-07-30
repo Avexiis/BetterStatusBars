@@ -30,21 +30,19 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-import lombok.RequiredArgsConstructor;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.components.TextComponent;
 
-@RequiredArgsConstructor
 class BarRenderer
 {
-	private static final Color BACKGROUND = new Color(0, 0, 0, 150);
-	private static final Color OVERHEAL_COLOR = new Color(216, 255, 139, 150);
-
+	static final int DISABLED_FLASH_THRESHOLD = -1;
 	private static final int SKILL_ICON_HEIGHT = 35;
 	private static final int COUNTER_ICON_HEIGHT = 18;
 	private static final int BORDER_SIZE = 1;
 	private static final int MIN_ICON_AND_COUNTER_WIDTH = 16;
+	private static final int UNSET_TICK = Integer.MIN_VALUE;
 
 	static final int DEFAULT_WIDTH = 20;
 	static final int MIN_WIDTH = 3;
@@ -56,9 +54,33 @@ class BarRenderer
 	private final Supplier<Color> colorSupplier;
 	private final Supplier<Color> healColorSupplier;
 	private final Supplier<Image> iconSupplier;
+	private final Supplier<Integer> flashThresholdSupplier;
+	private final IntSupplier tickCountSupplier;
 
 	private int maxValue;
 	private int currentValue;
+	private int thresholdFlashStartTick = UNSET_TICK;
+
+	BarRenderer(
+		Supplier<Integer> maxValueSupplier,
+		Supplier<Integer> currentValueSupplier,
+		Supplier<Integer> healSupplier,
+		Supplier<Color> colorSupplier,
+		Supplier<Color> healColorSupplier,
+		Supplier<Image> iconSupplier,
+		Supplier<Integer> flashThresholdSupplier,
+		IntSupplier tickCountSupplier
+	)
+	{
+		this.maxValueSupplier = maxValueSupplier;
+		this.currentValueSupplier = currentValueSupplier;
+		this.healSupplier = healSupplier;
+		this.colorSupplier = colorSupplier;
+		this.healColorSupplier = healColorSupplier;
+		this.iconSupplier = iconSupplier;
+		this.flashThresholdSupplier = flashThresholdSupplier;
+		this.tickCountSupplier = tickCountSupplier;
+	}
 
 	private void refreshSkills()
 	{
@@ -66,14 +88,26 @@ class BarRenderer
 		currentValue = currentValueSupplier.get();
 	}
 
+	void onGameTick(MoreStatusBarsConfig config)
+	{
+		refreshSkills();
+		updateThresholdFlash(config);
+	}
+
+	void resetFlashState()
+	{
+		thresholdFlashStartTick = UNSET_TICK;
+	}
+
 	void renderBar(MoreStatusBarsConfig config, Graphics2D graphics, int x, int y, int width, int height)
 	{
 		refreshSkills();
+		updateThresholdFlash(config);
 
 		final int filledHeight = getBarHeight(maxValue, currentValue, height);
 		final Color fill = colorSupplier.get();
 
-		graphics.setColor(BACKGROUND);
+		graphics.setColor(config.backgroundColor());
 		graphics.drawRect(x, y, width - BORDER_SIZE, height - BORDER_SIZE);
 		graphics.fillRect(x, y, width, height);
 
@@ -87,7 +121,13 @@ class BarRenderer
 
 		if (config.enableRestorationBars())
 		{
-			renderRestore(graphics, x, y, width, height);
+			renderRestore(config, graphics, x, y, width, height);
+		}
+
+		if (isThresholdFlashActive(config))
+		{
+			graphics.setColor(config.thresholdFlashColor());
+			graphics.fillRect(x, y, width, height);
 		}
 
 		if (config.enableSkillIcon() || config.enableCounter())
@@ -131,7 +171,42 @@ class BarRenderer
 		}
 	}
 
-	private void renderRestore(Graphics2D graphics, int x, int y, int width, int height)
+	private void updateThresholdFlash(MoreStatusBarsConfig config)
+	{
+		final int flashTicks = getThresholdFlashTicks(config);
+		final Integer flashThreshold = flashThresholdSupplier.get();
+		if (flashTicks <= 0 || flashThreshold == null || flashThreshold < 0 || currentValue > flashThreshold)
+		{
+			thresholdFlashStartTick = UNSET_TICK;
+			return;
+		}
+
+		if (thresholdFlashStartTick == UNSET_TICK)
+		{
+			thresholdFlashStartTick = tickCountSupplier.getAsInt();
+		}
+	}
+
+	private boolean isThresholdFlashActive(MoreStatusBarsConfig config)
+	{
+		final int flashTicks = getThresholdFlashTicks(config);
+		if (flashTicks <= 0 || thresholdFlashStartTick == UNSET_TICK)
+		{
+			return false;
+		}
+
+		final int elapsedTicks = Math.max(0, tickCountSupplier.getAsInt() - thresholdFlashStartTick);
+		final int flashCycleTicks = flashTicks + 1;
+		return elapsedTicks % flashCycleTicks < flashTicks;
+	}
+
+	private static int getThresholdFlashTicks(MoreStatusBarsConfig config)
+	{
+		final MoreStatusBarsConfig.FlashDuration flashDuration = config.thresholdFlashDuration();
+		return flashDuration == null ? 0 : flashDuration.getTicks();
+	}
+
+	private void renderRestore(MoreStatusBarsConfig config, Graphics2D graphics, int x, int y, int width, int height)
 	{
 		final int heal = healSupplier.get();
 		if (heal <= 0)
@@ -153,7 +228,7 @@ class BarRenderer
 
 		if (filledHealHeight + filledCurrentHeight > height)
 		{
-			graphics.setColor(OVERHEAL_COLOR);
+			graphics.setColor(config.overhealColor());
 			fillY = y + BORDER_SIZE;
 			fillHeight = height - filledCurrentHeight - BORDER_SIZE;
 		}

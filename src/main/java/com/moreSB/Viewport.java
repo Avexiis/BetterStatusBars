@@ -26,13 +26,9 @@
  */
 package com.moreSB;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.InterfaceID;
 
-@Getter
-@AllArgsConstructor
 enum Viewport
 {
 	RESIZED_BOX(InterfaceID.ToplevelOsrsStretch.SIDE_CONTAINER,
@@ -47,4 +43,26 @@ enum Viewport
 	private final int viewport;
 	private final Point offsetLeft;
 	private final Point offsetRight;
+
+	Viewport(int viewport, Point offsetLeft, Point offsetRight)
+	{
+		this.viewport = viewport;
+		this.offsetLeft = offsetLeft;
+		this.offsetRight = offsetRight;
+	}
+
+	int getViewport()
+	{
+		return viewport;
+	}
+
+	Point getOffsetLeft()
+	{
+		return offsetLeft;
+	}
+
+	Point getOffsetRight()
+	{
+		return offsetRight;
+	}
 }
