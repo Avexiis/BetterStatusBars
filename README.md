@@ -13,6 +13,9 @@ More Status Bars enhances the default Status Bars plugin by letting you display 
   - Run Energy
   - Special Attack
   - Warmth
+- Other Features
+  - Recolor each bar and its status type(s) individually
+  - Set status thresholds to make the bars flash when that number is reached
 
 ---
 
